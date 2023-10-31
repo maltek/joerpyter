@@ -53,7 +53,7 @@ class JoernKernel(Kernel):
             res = {"success": "false", "stdout": "", "stderr": "connection problem: " + str(e)}
 
         for stream in ("stderr", "stdout"):
-            if res[stream] and not silent:
+            if res.get(stream) and not silent:
                 stream_content = {'name': stream, 'text': res[stream] + "\n"}
                 self.send_response(self.iopub_socket, 'stream', stream_content)
 
