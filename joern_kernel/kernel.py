@@ -1,12 +1,15 @@
 import asyncio
 import secrets
 import time
+import os
 
 from cpgqls_client import CPGQLSClient, import_code_query, workspace_query
 from ipykernel.kernelbase import Kernel
 
 class JoernKernel(Kernel):
-    implementation = 'Joern'
+    binary_name = os.environ.get("JOERPYTER_BINARY", "joern")
+
+    implementation = os.environ.get("JOERPYTER_NAME", "Joern")
     implementation_version = '1.0'
     language = 'scala'
     language_version = '0.1'
@@ -15,10 +18,11 @@ class JoernKernel(Kernel):
         'mimetype': 'text/x-scala',
         'file_extension': '.sc',
     }
-    banner = "Joern kernel"
+    banner = f"{implementation} kernel"
 
     client = None
     server_instance = None
+
 
     async def _run_server(self):
         if self.server_instance is None or self.server_instance.returncode is not None:
@@ -26,7 +30,7 @@ class JoernKernel(Kernel):
             password = secrets.token_hex(64)
             port = (1 << 16) - 1 - secrets.randbits(15) # random port above 1024 (or 32767 actually)
             self.server_instance = await asyncio.create_subprocess_exec(
-                "joern",
+                self.binary_name,
                 "--server",
                 "--server-auth-username", user,
                 "--server-auth-password", password,
@@ -35,7 +39,7 @@ class JoernKernel(Kernel):
 
             await asyncio.sleep(10) # bad way to wait for server to start
             if self.server_instance.returncode is not None:
-                raise Exception(f"joern exited unexpectedly with error code {self.server_instance.returncode}")
+                raise Exception(f"{self.binary_name} exited unexpectedly with error code {self.server_instance.returncode}")
 
             self.client = CPGQLSClient(f"localhost:{port}", auth_credentials=(user, password))
 

@@ -7,19 +7,21 @@ import shutil
 from jupyter_client.kernelspec import KernelSpecManager
 from tempfile import TemporaryDirectory
 
-kernel_json = {
-    "argv": [sys.executable, "-m", "joern_kernel", "-f", "{connection_file}"],
-    "display_name": "Joern",
-    "language": "scala",
-}
+def kernel_json(name, binary):
+    return {
+        "argv": [sys.executable, "-m", "joern_kernel", "-f", "{connection_file}"],
+        "display_name": name,
+        "language": "scala",
+        "env": {
+            "JOERPYTER_NAME": name,
+            "JOERPYTER_BINARY": binary,
+        },
+    }
 
 
 def install_my_kernel_spec(user=True, prefix=None):
     with TemporaryDirectory() as td:
         os.chmod(td, 0o755) # Starts off as 700, not user readable
-        with open(os.path.join(td, 'kernel.json'), 'w') as f:
-            json.dump(kernel_json, f, sort_keys=True)
-        print('Installing Jupyter kernel spec')
         # requires logo files in kernel root directory
         cur_path = os.path.dirname(os.path.realpath(__file__))
         for logo in ["logo-32x32.png", "logo-64x64.png"]:
@@ -28,7 +30,11 @@ def install_my_kernel_spec(user=True, prefix=None):
             except FileNotFoundError:
                 print("Custom logo files not found. Default logos will be used.")
         
-        KernelSpecManager().install_kernel_spec(td, 'joern', user=user, prefix=prefix)
+        for name, binary in (('Joern', "joern"), ('Ocular', 'ocular.sh')):
+            print(f'Installing Jupyter kernel spec for {name}')
+            with open(os.path.join(td, 'kernel.json'), 'w') as f:
+                json.dump(kernel_json(name, binary), f, sort_keys=True)
+            KernelSpecManager().install_kernel_spec(td, name, user=user, prefix=prefix)
 
 
 def _is_root():
