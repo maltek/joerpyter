@@ -37,8 +37,11 @@ class JoernKernel(Kernel):
             env['JOERPYTER_IMAGE_FILE'] = self._image_file.name
 
             with tempfile.NamedTemporaryFile("w") as script_file:
-                viewer = os.path.join(os.path.dirname(__file__), 'viewer.sh')
-                script_file.write(f'config.tools.imageViewer = "{viewer}"')
+                if os.name == 'nt':
+                    viewer = os.path.join(os.path.dirname(__file__), 'viewer.bat')
+                else:
+                    viewer = os.path.join(os.path.dirname(__file__), 'viewer.sh')
+                script_file.write(f'config.tools.imageViewer = "{viewer}"\n')
                 script_file.flush()
 
                 self.server_instance = await asyncio.create_subprocess_exec(
@@ -52,7 +55,7 @@ class JoernKernel(Kernel):
 
                     env=env)
 
-                await asyncio.sleep(10) # bad way to wait for server to start
+                await asyncio.sleep(20) # bad way to wait for server to start
 
             if self.server_instance.returncode is not None:
                 raise Exception(f"{self.binary_name} exited unexpectedly with error code {self.server_instance.returncode}")
